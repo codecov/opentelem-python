@@ -10,13 +10,39 @@ orbs:
 workflows:
   sample:
     jobs:
-      - build-and-test
+      - test-38
+      - test-37
+      - test-36
 
 
 jobs:
-  build-and-test:
+  test-38:
     docker:
       - image: cimg/python:3.8
+    steps:
+      - checkout
+      - run:
+          name: installpackages
+          command: |
+            make testsuite.install
+      - run:
+          name: Run tests
+          command: pytest
+  test-37:
+    docker:
+      - image: cimg/python:3.7
+    steps:
+      - checkout
+      - run:
+          name: installpackages
+          command: |
+            make testsuite.install
+      - run:
+          name: Run tests
+          command: pytest
+  test-36:
+    docker:
+      - image: cimg/python:3.6
     steps:
       - checkout
       - run:

@@ -41,7 +41,7 @@ def test_export_span(mocker, mocked_responses):
         content_type="application/json",
     )
     exporter = CoverageExporter(
-        cov_storage, repository_token, profiling_identifier, codecov_endpoint
+        cov_storage, repository_token, profiling_identifier, codecov_endpoint, 1
     )
     span = mocker.MagicMock(to_json=mocker.MagicMock(return_value="{}"))
     assert exporter.export([span])

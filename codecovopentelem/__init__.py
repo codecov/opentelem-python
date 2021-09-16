@@ -1,12 +1,11 @@
 import json
 import logging
 import random
-import re
 import urllib.parse
 from base64 import b64encode
 from decimal import Decimal
 from io import StringIO
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Pattern
 
 import coverage
 import requests
@@ -43,7 +42,7 @@ class CodecovCoverageGenerator(SpanProcessor):
         self,
         cov_storage: CodecovCoverageStorageManager,
         sample_rate: Decimal,
-        name_regex: re.Pattern = None,
+        name_regex: Pattern = None,
     ):
         self._cov_storage = cov_storage
         self._sample_rate = sample_rate
@@ -71,11 +70,13 @@ class CoverageExporter(SpanExporter):
         repository_token: str,
         profiling_identifier: str,
         codecov_endpoint: str,
+        untracked_export_rate: float,
     ):
         self._cov_storage = cov_storage
         self._repository_token = repository_token
         self._profiling_identifier = profiling_identifier
         self._codecov_endpoint = codecov_endpoint
+        self._untracked_export_rate = untracked_export_rate
 
     def _load_codecov_dict(self, span, cov):
         k = StringIO()
@@ -92,7 +93,7 @@ class CoverageExporter(SpanExporter):
         return coverage_dict
 
     def export(self, spans):
-        data = []
+        tracked_spans = []
         untracked_spans = []
         for span in spans:
             span_id = span.context.span_id
@@ -100,9 +101,12 @@ class CoverageExporter(SpanExporter):
             s = json.loads(span.to_json())
             if cov is not None:
                 s["codecov"] = self._load_codecov_dict(span, cov)
-                data.append(s)
+                tracked_spans.append(s)
             else:
-                untracked_spans.append(s)
+                if random.random() < self._untracked_export_rate:
+                    untracked_spans.append(s)
+        if not tracked_spans:
+            return SpanExportResult.SUCCESS
         url = urllib.parse.urljoin(self._codecov_endpoint, "/profiling/uploads")
         res = requests.post(
             url,
@@ -118,7 +122,7 @@ class CoverageExporter(SpanExporter):
         requests.put(
             location,
             headers={"Content-Type": "application/txt"},
-            data=json.dumps({"spans": data, "untracked": untracked_spans}).encode(),
+            data=json.dumps({"spans": tracked_spans, "untracked": untracked_spans}).encode(),
         )
         return SpanExportResult.SUCCESS
 
@@ -127,7 +131,7 @@ def get_codecov_opentelemetry_instances(
     repository_token: str,
     profiling_identifier: str,
     sample_rate: float,
-    name_regex: Optional[re.Pattern],
+    name_regex: Optional[Pattern],
     codecov_endpoint: str = None,
     writeable_folder: str = None,
 ) -> Tuple[CodecovCoverageGenerator, CoverageExporter]:
@@ -139,7 +143,7 @@ def get_codecov_opentelemetry_instances(
         repository_token (str): The profiling-capable authentication token
         profiling_identifier (str): The identifier for what profiling one is doing
         sample_rate (float): The sampling rate for codecov
-        name_regex (Optional[re.Pattern]): A regex to filter which spans should be
+        name_regex (Optional[Pattern]): A regex to filter which spans should be
             sampled
         codecov_endpoint (str, optional): For configuring the endpoint in case
             the user is in enterprise (not supported yet). Default is "https://api.codecov.io/"
@@ -151,7 +155,13 @@ def get_codecov_opentelemetry_instances(
         codecov_endpoint = "https://api.codecov.io"
     manager = CodecovCoverageStorageManager(writeable_folder)
     generator = CodecovCoverageGenerator(manager, sample_rate, name_regex)
+    # untracked rate set to make it so we export roughly as many tracked and untracked spans
+    untracked_export_rate = sample_rate / (1 - sample_rate) if sample_rate < 1 else 0
     exporter = CoverageExporter(
-        manager, repository_token, profiling_identifier, codecov_endpoint
+        manager,
+        repository_token,
+        profiling_identifier,
+        codecov_endpoint,
+        untracked_export_rate,
     )
     return (generator, exporter)
