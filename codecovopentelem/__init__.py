@@ -85,13 +85,13 @@ class CoverageExporter(SpanExporter):
         self,
         cov_storage: CodecovCoverageStorageManager,
         repository_token: str,
-        profiling_id: str,
+        code: str,
         codecov_endpoint: str,
         untracked_export_rate: float,
     ):
         self._cov_storage = cov_storage
         self._repository_token = repository_token
-        self._profiling_id = profiling_id
+        self._code = code
         self._codecov_endpoint = codecov_endpoint
         self._untracked_export_rate = untracked_export_rate
 
@@ -128,7 +128,7 @@ class CoverageExporter(SpanExporter):
             res = requests.post(
                 url,
                 headers={"Authorization": f"repotoken {self._repository_token}"},
-                json={"profiling": self._profiling_id},
+                json={"profiling": self._code},
             )
             res.raise_for_status()
         except requests.RequestException:
@@ -149,10 +149,11 @@ def get_codecov_opentelemetry_instances(
     repository_token: str,
     sample_rate: float,
     untracked_export_rate: float,
+    code: str,
     filters: Optional[Dict] = None,
-    profiling_identifier: Optional[str] = None,
+    version_identifier: Optional[str] = None,
     environment: Optional[str] = None,
-    profiling_id: Optional[str] = None,
+    needs_version_creation: bool = True,
     codecov_endpoint: str = None,
     writeable_folder: str = None,
 ) -> Tuple[CodecovCoverageGenerator, CoverageExporter]:
@@ -160,20 +161,16 @@ def get_codecov_opentelemetry_instances(
     Entrypoint for getting a span processor/span exporter
         pair for getting profiling data into codecov
 
-    Notice that either `profiling_id` or `profiling_identifier` and `environment` need to be set.
-        If `profiling_id` is set, we just use it directly on the exporter. If not, we will use
-        `profiling_identifier` and `environment` to generate fetch a `profiling_id` from the
-        database
-
     Args:
         repository_token (str): The profiling-capable authentication token
         sample_rate (float): The sampling rate for codecov
         untracked_export_rate (float): Description
         filters (Optional[Dict], optional): A dictionary of filters for determining which
             spans should have its coverage tracked
-        profiling_identifier (Optional[str], optional): The identifier for what profiling one is doing
+        version_identifier (Optional[str], optional): The identifier for what
+            software version is being profiled
         environment (Optional[str], optional): Which environment this profiling is running on
-        profiling_id (Optional[str], optional): Description
+        code (str): The code of this profiling
         codecov_endpoint (str, optional): For configuring the endpoint in case
             the user is in enterprise (not supported yet). Default is "https://api.codecov.io/"
         writeable_folder (str, optional): A folder that is guaranteed to be write-able
@@ -181,16 +178,15 @@ def get_codecov_opentelemetry_instances(
             to live very long in there.
     """
     codecov_endpoint = codecov_endpoint or "https://api.codecov.io"
-    if profiling_id is None:
-        if profiling_identifier is None or environment is None:
-            raise UnableToStartProcessorException(
-                "Codecov profiling needs either the id or identifier + environment"
-            )
+    if code is None:
+        raise UnableToStartProcessorException("Codecov profiling needs a code set")
+    if needs_version_creation and version_identifier and environment:
         response = requests.post(
             urllib.parse.urljoin(codecov_endpoint, "/profiling/versions"),
             json={
-                "version_identifier": profiling_identifier,
+                "version_identifier": version_identifier,
                 "environment": environment,
+                "code": code,
             },
             headers={"Authorization": f"repotoken {repository_token}"},
         )
@@ -198,14 +194,9 @@ def get_codecov_opentelemetry_instances(
             response.raise_for_status()
         except requests.HTTPError:
             raise UnableToStartProcessorException()
-        profiling_id = response.json()["external_id"]
     manager = CodecovCoverageStorageManager(writeable_folder, filters or {})
     generator = CodecovCoverageGenerator(manager, sample_rate)
     exporter = CoverageExporter(
-        manager,
-        repository_token,
-        profiling_id,
-        codecov_endpoint,
-        untracked_export_rate,
+        manager, repository_token, code, codecov_endpoint, untracked_export_rate,
     )
     return (generator, exporter)
