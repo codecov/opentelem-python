@@ -27,10 +27,7 @@ class UnableToStartProcessorException(Exception):
 
 
 class CodecovCoverageStorageManager(object):
-    def __init__(self, writeable_folder: str, filters: Dict):
-        if writeable_folder is None:
-            writeable_folder = "/home/codecov"
-        self._writeable_folder = writeable_folder
+    def __init__(self, filters: Dict):
         self.inner = {}
         self._filters = filters
 
@@ -46,7 +43,7 @@ class CodecovCoverageStorageManager(object):
             CoverageSpanFilter.span_kind_filter
         ) and span.kind not in self._filters.get(CoverageSpanFilter.span_kind_filter):
             return False
-        cov = coverage.Coverage(data_file=f"{self._writeable_folder}/.{span_id}file")
+        cov = coverage.Coverage(data_file=None)
         self.inner[span_id] = cov
         cov.start()
         return True
@@ -132,7 +129,10 @@ class CoverageExporter(SpanExporter):
             )
             res.raise_for_status()
         except requests.RequestException:
-            log.warning("Unable to send profiling data to codecov")
+            log.warning(
+                "Unable to send profiling data to codecov",
+                extra=dict(response_data=res.json())
+            )
             return SpanExportResult.FAILURE
         location = res.json()["raw_upload_location"]
         requests.put(
@@ -155,27 +155,26 @@ def get_codecov_opentelemetry_instances(
     environment: Optional[str] = None,
     needs_version_creation: bool = True,
     codecov_endpoint: str = None,
-    writeable_folder: str = None,
 ) -> Tuple[CodecovCoverageGenerator, CoverageExporter]:
     """
     Entrypoint for getting a span processor/span exporter
         pair for getting profiling data into codecov
-
+    
     Args:
         repository_token (str): The profiling-capable authentication token
-        sample_rate (float): The sampling rate for codecov
-        untracked_export_rate (float): Description
+        sample_rate (float): The sampling rate for codecov, a number from 0 to 1
+        untracked_export_rate (float): The export rate for codecov for non-sampled spans,
+            a number from 0 to 1
+        code (str): The code of this profiling
         filters (Optional[Dict], optional): A dictionary of filters for determining which
             spans should have its coverage tracked
         version_identifier (Optional[str], optional): The identifier for what
             software version is being profiled
         environment (Optional[str], optional): Which environment this profiling is running on
-        code (str): The code of this profiling
+        needs_version_creation (bool, optional): Whether the "create this version" needs to be
+            called (one can choose to call it manually beforehand and disable it here)
         codecov_endpoint (str, optional): For configuring the endpoint in case
             the user is in enterprise (not supported yet). Default is "https://api.codecov.io/"
-        writeable_folder (str, optional): A folder that is guaranteed to be write-able
-            in the system. It's only used for temporary files, and nothing is expected
-            to live very long in there.
     """
     codecov_endpoint = codecov_endpoint or "https://api.codecov.io"
     if code is None:
@@ -194,7 +193,7 @@ def get_codecov_opentelemetry_instances(
             response.raise_for_status()
         except requests.HTTPError:
             raise UnableToStartProcessorException()
-    manager = CodecovCoverageStorageManager(writeable_folder, filters or {})
+    manager = CodecovCoverageStorageManager(filters or {})
     generator = CodecovCoverageGenerator(manager, sample_rate)
     exporter = CoverageExporter(
         manager, repository_token, code, codecov_endpoint, untracked_export_rate,
