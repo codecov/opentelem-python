@@ -137,7 +137,7 @@ class CoverageExporter(SpanExporter):
         location = res.json()["raw_upload_location"]
         requests.put(
             location,
-            headers={"Content-Type": "application/txt"},
+            headers={"Content-Type": "text/plain"},
             data=json.dumps(
                 {"spans": tracked_spans, "untracked": untracked_spans}
             ).encode(),
