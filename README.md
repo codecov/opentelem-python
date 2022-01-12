@@ -1,6 +1,6 @@
 # opentelem-python
 
-_Note: This packaged is part of the [Runtime Insights Early Access Program](https://about.codecov.io/product/feature/runtime-insights/)._
+_Note: This package is part of the [Runtime Insights Early Access Program](https://about.codecov.io/product/feature/runtime-insights/)._
 
 ## Purpose
 
