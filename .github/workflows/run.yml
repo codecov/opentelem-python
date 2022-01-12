@@ -18,6 +18,8 @@ jobs:
       - name: Install dependencies
         run: |
           make testsuite.install
+  test:
+    steps:
       - name: Test with pytest
         run: |
           make testsuite.run
@@ -26,3 +28,18 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: Python-v${{ matrix.python-version }}
           files: ./coverage.xml
+  package:
+    steps:
+      - name: Build Package
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        run: |
+          make package.build
+  publish:
+    steps:
+      - name: Publish package to TestPyPi
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.TESTPYPI_API_TOKEN}}
+          repository_url: https://test.pypi.org/legacy/
