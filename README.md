@@ -22,7 +22,9 @@ First, install the package:
 pip install codecovopentelem
 ```
 
-Second, include the following snippet in your application. Where this is snippet is placed varies depending on the application, but should generally be placed wherever you would put your application's OpenTelemetry startup code. In lieu of that, this code should be incorporated in such a way that it is part of your application's startup process:
+Second, include the following snippet in your application. Where this is snippet is placed varies depending on the application, see _Integration Examples_ below.
+
+The snippet:
 
 ```python
 from opentelemetry.sdk.trace import TracerProvider
@@ -70,9 +72,9 @@ provider.add_span_processor(generator)
 provider.add_span_processor(BatchSpanProcessor(exporter))
 ```
 
-You can see the Framework Specific Integration Examples section below for framework specific examples of how to incorporate this snippet into your project.
+### Integration Examples
 
-### Framework Specific Integration Examples
+The specifics of how this library is integrated into your project depends on the project itself. This section contains a few common, framework specific, integration approaches along with the general integration approach at the end.
 
 Note that these examples demonstrate _possible_ ways to incorporate this package into your project. As always, your specific needs may vary.
 
@@ -131,6 +133,10 @@ application = get_wsgi_application()
 ```
 
 Note that this example also demonstrates how to integrate using a `try/except`.
+
+#### General Integration
+
+If you are not using Django or Flask integration is still possible using the above code snippet. How to do this may vary greatly depending on your use case. In general, though, the code snippet should be placed wherever you would put your application's OpenTelemetry startup code. In lieu of that, this code should be incorporated in such a way that it is part of your application's startup process.
 
 ## Configuration
 
