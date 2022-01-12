@@ -22,7 +22,7 @@ First, install the package:
 pip install codecovopentelem
 ```
 
-Second, include the following snippet in your application's startup / bootstrapping process:
+Second, include the following snippet in your application. Where this is snippet is placed varies depending on the application, but should generally be placed wherever you would put your application's OpenTelemetry startup code. In lieu of that, this code should be incorporated in such a way that it is part of your application's startup process:
 
 ```python
 from opentelemetry.sdk.trace import TracerProvider
@@ -69,6 +69,68 @@ generator, exporter = get_codecov_opentelemetry_instances(
 provider.add_span_processor(generator)
 provider.add_span_processor(BatchSpanProcessor(exporter))
 ```
+
+You can see the Specific Examples section below for framework specific examples of how to incorporate this snippet into your project.
+
+### Framework Specific Integration Examples
+
+Note that these examples demonstrate _possible_ ways to incorporate this package into your project. As always, your specific needs may differ.
+
+#### Flask
+
+In a Flask application, you could place the code snippet in your application's `app.py` file _before_ the call to initialize your Flask app, like so:
+
+```python
+
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+
+# Snippet Code ...
+# Other Startup Code ...
+
+app = Flask(
+    __name__,
+    static_url_path='',
+    static_folder='',
+    template_folder='templates',
+)
+
+FlaskInstrumentor().instrument_app(app)
+
+# app.route(...)
+# ...
+
+app.run(host='0.0.0.0', port=8080)
+```
+
+#### Django
+
+In Django, you can place this snippet in your application's `<application_name>/wsgi.py` file:
+
+```python
+
+import os
+
+from django.core.wsgi import get_wsgi_application
+
+from utils.config import get_settings_module
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", get_settings_module())
+
+#... Other Startup Code
+
+from opentelemetry.instrumentation.django import DjangoInstrumentor
+try:
+    # Snippet Code
+except UnableToStartProcessorException:
+    # Handle the Exception...
+
+DjangoInstrumentor().instrument()
+
+
+application = get_wsgi_application()
+```
+
+Note that this example also demonstrates how to integrate using a `try/except`.
 
 ## Configuration
 
