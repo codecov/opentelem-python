@@ -8,7 +8,6 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8]
-
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -18,8 +17,6 @@ jobs:
       - name: Install dependencies
         run: |
           make testsuite.install
-  test:
-    steps:
       - name: Test with pytest
         run: |
           make testsuite.run
@@ -29,13 +26,17 @@ jobs:
           flags: Python-v${{ matrix.python-version }}
           files: ./coverage.xml
   package:
+    needs: build
+    runs-on: ubuntu-latest
     steps:
+      - name: Install Packaging Tools
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        run: |
+          make package.install
       - name: Build Package
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         run: |
           make package.build
-  publish:
-    steps:
       - name: Publish package to TestPyPi
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         uses: pypa/gh-action-pypi-publish@release/v1
