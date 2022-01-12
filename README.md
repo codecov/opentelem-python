@@ -70,11 +70,11 @@ provider.add_span_processor(generator)
 provider.add_span_processor(BatchSpanProcessor(exporter))
 ```
 
-You can see the Specific Examples section below for framework specific examples of how to incorporate this snippet into your project.
+You can see the Framework Specific Integration Examples section below for framework specific examples of how to incorporate this snippet into your project.
 
 ### Framework Specific Integration Examples
 
-Note that these examples demonstrate _possible_ ways to incorporate this package into your project. As always, your specific needs may differ.
+Note that these examples demonstrate _possible_ ways to incorporate this package into your project. As always, your specific needs may vary.
 
 #### Flask
 
