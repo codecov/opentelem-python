@@ -10,9 +10,10 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="codecovopentelem",
-    version="0.0.1",
-    description="Shared Codecov",
+    version="0.0.6",
+    description="Implements Runtime Insights Support for Python Project",
     long_description=long_description,
+    long_description_content_type='text/markdown',
     url="https://github.com/codecov/opentelem-python",
     author="Codecov",
     author_email="support@codecov.io",
