@@ -1,12 +1,11 @@
 # opentelem-python
 
-_Note: This package is part of the [Runtime Insights Early Access Program](https://about.codecov.io/product/feature/runtime-insights/)._
 
 ## Purpose
 
-This package allows Python projects to leverage Codecov's [Runtime Insights](https://about.codecov.io/product/feature/runtime-insights/) feature.
+This package allows Python projects to leverage Codecov's [Impact Analysis]([https://about.codecov.io/product/feature/runtime-insights/](https://docs.codecov.com/docs/impact-analysis)) feature.
 
-More information about Runtime Insights can be found [in Codecov's public documentation](https://docs.codecov.com/docs/runtime-insights).
+More information about Runtime Insights can be found [in Codecov's public documentation]([https://docs.codecov.com/docs/runtime-insights](https://docs.codecov.com/docs/impact-analysis)).
 
 ## Requirements and Pre-requisites
 
@@ -144,7 +143,7 @@ If you are not using Django or Flask integration is still possible using the abo
 - `current_env` -- _(Required)_ The environment in which the application is currently running. Typically "production", but can be other values as well (e.g., "local" / "dev" for testing during setup of the package, "test" for instrumenting in your test environment, etc.)
 - `code` -- A unique identifier for the current deployment across all environments where it may be deployed. Conventionally, this is a combination of version number and environment name, but can be anything as long as it is unique in each environment for the version being deployed.
 - `export_rate` -- _(Required. Min: 0, Max: 1)_ The percentage of your application's calls that are instrumented using this package. Using this package does incur some performance overhead, and instrumenting 100% of calls is not required. Therefore, for most applications, it is recommended to use 0.01 to 0.05 as the default value. However, low traffic applications may want to use a larger number (such as 0.1 or more).
-- `repository_token` -- _(Required)_ The identifying token for this repository. Currently only obtainable by being selected for Codecov's [Runtime Insights Early Access Program](https://about.codecov.io/product/feature/runtime-insights/). It should be treated as a sensitive credential (e.g., not committed to source control, etc.)
+- `repository_token` -- _(Required)_ The identifying token for this repository. It is accessible from the repository's settings page in the Codecov application. It should be treated as a sensitive credential (e.g., not committed to source control, etc.)
 - `untracked_export_rate` -- Currently unused, should remain at 0.
 
 If desired, the `filters` parameter can also be changed to provide different filtering on any valid OpenTelemetry `SpanKind` as [defined by the specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind).
