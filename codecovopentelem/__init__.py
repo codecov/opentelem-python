@@ -121,17 +121,19 @@ class CoverageExporter(SpanExporter):
         if not tracked_spans and not untracked_spans:
             return SpanExportResult.SUCCESS
         url = urllib.parse.urljoin(self._codecov_endpoint, "/profiling/uploads")
+        headers = {"Authorization": f"repotoken {self._repository_token}"}
+        json_data = {"profiling": self._code}
         try:
             res = requests.post(
                 url,
-                headers={"Authorization": f"repotoken {self._repository_token}"},
-                json={"profiling": self._code},
+                headers=headers,
+                json=json_data,
             )
             res.raise_for_status()
         except requests.RequestException:
             log.warning(
                 "Unable to send profiling data to codecov",
-                extra=dict(response_data=res.json())
+                extra=dict(url=url, json=json_data)
             )
             return SpanExportResult.FAILURE
         location = res.json()["raw_upload_location"]
