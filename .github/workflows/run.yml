@@ -20,7 +20,7 @@ jobs:
       - name: Test with pytest
         run: |
           make testsuite.run
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: Python-v${{ matrix.python-version }}
